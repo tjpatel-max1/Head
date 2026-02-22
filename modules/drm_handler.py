@@ -262,7 +262,7 @@ async def drm_handler(bot: Client, m: Message):
     try:
         for i in range(arg-1, len(links)):
             mpd = None
-            keys_string = \"\"
+            keys_string = ""
             if globals.cancel_requested:
                 await m.reply_text("🚦**STOPPED**🚦")
                 globals.processing_request = False
