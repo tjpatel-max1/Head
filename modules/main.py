@@ -9,6 +9,7 @@ import requests
 import subprocess
 import random
 from pyromod import listen
+from keepalive import keep_alive
 from pyrogram import Client, filters
 from pyrogram.errors.exceptions.bad_request_400 import StickerEmojiInvalid
 from pyrogram.types.messages_and_media import message
@@ -27,7 +28,7 @@ from authorisation import add_auth_user, list_auth_users, remove_auth_user
 from youtube_handler import ytm_handler, y2t_handler, getcookies_handler, cookies_handler
 from vars import API_ID, API_HASH, BOT_TOKEN, OWNER, CREDIT, AUTH_USERS, TOTAL_USERS, cookies_file_path
 # .....,.....,.......,...,.......,....., .....,.....,.......,...,.......,.....,
-
+keep_alive()
 # Initialize the bot
 bot = Client(
     "bot",
