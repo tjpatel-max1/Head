@@ -1,5 +1,3 @@
-#Environment API
-
 import os
 import re
 import sys
