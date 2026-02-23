@@ -576,3 +576,83 @@ async def drm_handler(bot: Client, m: Message):
         else:
             await bot.send_message(channel_id, f"<b>-┈━═.•°✅ Completed ✅°•.═━┈-</b>\n<blockquote><b>🎯Batch Name : {b_name}</b></blockquote>\n<blockquote>🔗 Total URLs: {len(links)} \n┃   ┠🔴 Total Failed URLs: {failed_count}\n┃   ┠🟢 Total Successful URLs: {success_count}\n┃   ┃   ┠🎥 Total Video URLs: {video_count}\n┃   ┃   ┠📄 Total PDF URLs: {pdf_count}\n┃   ┃   ┠📸 Total IMAGE URLs: {img_count}</blockquote>\n")
             await bot.send_message(m.chat.id, f"<blockquote><b>✅ Your Task is completed, please check your Set Channel📱</b></blockquote>")
+
+
+# ===============================
+# FINAL SAFE CLASSPLUS HANDLER
+# ===============================
+from urllib.parse import quote_plus
+import os
+import requests
+
+CP_DRM_API = os.getenv("CP_DRM_API")
+
+def should_use_api(url: str):
+    if not isinstance(url, str):
+        return False
+    if url.lower().endswith(".pdf"):
+        print("📄 PDF detected → skipping API")
+        return False
+    if "media-cdn.classplusapp.com/drm/" in url:
+        return True
+    if "media-cdn.classplusapp.com/" in url and ".m3u8" in url:
+        return True
+    return False
+
+
+def fetch_cp_drm_keys(video_url):
+    try:
+        print("\n========== API DEBUG ==========")
+        print("INPUT URL:", video_url)
+
+        if not should_use_api(video_url):
+            print("⚡ Direct download (no API)")
+            print("================================\n")
+            return video_url, ""
+
+        if not CP_DRM_API:
+            print("⚠️ CP_DRM_API missing")
+            print("================================\n")
+            return video_url, ""
+
+        encoded_url = quote_plus(video_url)
+        api_call = CP_DRM_API.replace("{url}", encoded_url)
+
+        print("API CALL:", api_call)
+
+        r = requests.get(api_call, timeout=45)
+        data = {}
+        try:
+            data = r.json()
+        except Exception:
+            print("❌ API JSON decode failed")
+            print("================================\n")
+            return video_url, ""
+
+        print("API RESPONSE:", data)
+        print("================================\n")
+
+        if not isinstance(data, dict):
+            return video_url, ""
+
+        mpd = data.get("mpd_url")
+        keys = data.get("keys")
+        signed = data.get("url")
+
+        # DRM
+        if mpd and keys:
+            keys_string = " ".join(f"--key {k}" for k in keys)
+            print("🔐 DRM Stream detected")
+            return mpd, keys_string
+
+        # Signed NON‑DRM
+        if signed:
+            print("📺 Signed HLS Stream detected")
+            return signed, ""
+
+        print("⚠️ API returned no usable stream → fallback")
+        return video_url, ""
+
+    except Exception as e:
+        print("DRM FETCH ERROR:", e)
+        return video_url, ""
