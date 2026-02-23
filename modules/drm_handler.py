@@ -323,12 +323,19 @@ async def drm_handler(bot: Client, m: Message):
            
             
             elif "media-cdn.classplusapp.com" in url:
+
                 resolved_url, keys_string = fetch_cp_drm_keys(url)
+
                 url = resolved_url
-                keys = keys_string or ""
-                mpd = urlesult
-                url = mpd
-                keys_string = " ".join([f"--key {key}" for key in keys])
+                keys_string = keys_string or ""
+
+                # DRM stream
+                if keys_string:
+                    mpd = url
+
+                # Non-DRM signed stream
+                else:
+                    mpd = None
 
             if "edge.api.brightcove.com" in url:
                 bcov = f'bcov_auth={cwtoken}'
