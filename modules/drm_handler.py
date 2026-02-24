@@ -54,6 +54,11 @@ CP_DRM_API = os.getenv("CP_DRM_API")
 
 
 async def drm_handler(bot: Client, m: Message):
+    global STOP_BATCH_ON_ERROR
+    global STOP_AFTER_CURRENT
+    # ✅ RESET FLAGS FOR NEW BATCH
+    STOP_BATCH_ON_ERROR = False
+    STOP_AFTER_CURRENT = False
     globals.processing_request = True
     globals.cancel_requested = False
     caption = globals.caption
@@ -594,7 +599,6 @@ async def drm_handler(bot: Client, m: Message):
 
             except Exception as e:
 
-                global STOP_BATCH_ON_ERROR
                 STOP_BATCH_ON_ERROR = True
 
                 await bot.send_message(
