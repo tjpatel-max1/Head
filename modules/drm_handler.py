@@ -22,28 +22,6 @@ from aiohttp import ClientSession
 from subprocess import getstatusoutput
 from pytube import YouTube
 from aiohttp import web
-
-API_STOP = False
-
-
-def api_guard_check(data):
-    global API_STOP
-    if not isinstance(data, dict):
-        return False
-    if data.get("error"):
-        logging.error(f"API ERROR: {data.get('error')}")
-        API_STOP = True
-        return True
-    try:
-        pts = float(data.get("points_deducted", 0))
-        if pts >= 0.5:
-            logging.error("HIGH API COST DETECTED; stopping batch")
-            API_STOP = True
-            return True
-    except Exception:
-        pass
-    return False
-
 import random
 from pyromod import listen
 from pyrogram import Client, filters
@@ -56,6 +34,8 @@ import aiofiles
 import zipfile
 import shutil
 import ffmpeg
+STOP_AFTER_CURRENT = False
+
 
 import saini as helper
 import html_handler
@@ -563,6 +543,9 @@ async def drm_handler(bot: Client, m: Message):
                     await helper.send_vid(bot, m, cc, filename, vidwatermark, thumb, name, prog, channel_id)
                     count += 1  
                     await asyncio.sleep(1)  
+                    if STOP_AFTER_CURRENT:
+                        await bot.send_message(channel_id, '🛑 Batch stopped automatically (API 0.50 tier)')
+                        return
                     continue  
 
                 elif 'drmcdni' in url or 'drm/wv' in url or 'drm/common' in url:
@@ -575,6 +558,9 @@ async def drm_handler(bot: Client, m: Message):
                     await helper.send_vid(bot, m, cc, filename, vidwatermark, thumb, name, prog, channel_id)
                     count += 1
                     await asyncio.sleep(1)
+                    if STOP_AFTER_CURRENT:
+                        await bot.send_message(channel_id, '🛑 Batch stopped automatically (API 0.50 tier)')
+                        return
                     continue
      
                 else:
@@ -588,6 +574,9 @@ async def drm_handler(bot: Client, m: Message):
                     count += 1
                     time.sleep(1)
                 
+                    if STOP_AFTER_CURRENT:
+                        await bot.send_message(channel_id, '🛑 Batch stopped automatically (API 0.50 tier)')
+                        return
             except Exception as e:
                 await bot.send_message(channel_id, f'⚠️**Downloading Failed**⚠️\n**Name** =>> `{str(count).zfill(3)} {name1}`\n**Url** =>> {url}\n\n<blockquote expandable><i><b>Failed Reason: {str(e)}</b></i></blockquote>', disable_web_page_preview=True)
                 count += 1
@@ -661,6 +650,13 @@ def fetch_cp_drm_keys(video_url):
 
         print("API RESPONSE:", data)
         print("================================\n")
+        global STOP_AFTER_CURRENT
+        try:
+            if float(data.get('points_deducted', 0)) >= 0.5 or '0.50' in str(data.get('pricing_tier','')):
+                print('⚠️ HIGH API COST DETECTED → will stop after current')
+                STOP_AFTER_CURRENT = True
+        except Exception:
+            pass
 
         if not isinstance(data, dict):
             return video_url, ""
